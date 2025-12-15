@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dddd的小屋 - 作品集展示</title>
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <style>
+        /* 莫兰迪色系配置 */
+        :root {
+            --morandi-primary: #9A8B78; /* 灰棕色 - 主色调 */
+            --morandi-secondary: #B4A390; /* 暖米色 - 辅助色 */
+            --morandi-accent: #A29281; /* 浅咖色 - 强调色 */
+            --morandi-light: #F5F5F0; /* 米白色 - 背景色 */
+            --morandi-dark: #3A3A38; /* 深灰色 - 文字色 */
+            --morandi-hover: #8A7C6C; /* 深灰棕 - 悬停色 */
+        }
+
+        /* 基础样式 */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--morandi-light);
+            color: var(--morandi-dark);
+            line-height: 1.6;
+        }
+
+        /* 导航栏样式 */
+        .nav {
+            transition: all 0.3s ease;
+        }
+
+        .nav.scrolled {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 平滑滚动 */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* 作品卡片样式 */
+        .project-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 按钮样式 */
+        .btn {
+            transition: all 0.3s ease;
+            touch-action: manipulation; /* 优化触摸设备点击响应 */
+        }
+
+        .btn:hover, .btn:focus {
+            transform: translateY(-2px);
+        }
+
+        /* 模态框样式 */
+        .modal {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        /* 移动端菜单 */
+        .mobile-menu {
+            transform: translateY(-10px);
+            opacity: 0;
+            visibility: hidden;
+            transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .mobile-menu.active {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 技能条动画 */
+        @keyframes progress {
+            from { width: 0; }
+            to { width: var(--progress-width); }
+        }
+
+        .skill-bar {
+            animation: progress 1.5s ease-out forwards;
+        }
+
+        /* 加载动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .delay-500 { animation-delay: 0.5s; }
+        
+        /* 技术栈树状图容器 - 响应式黄金分割比例 */
+        .mermaid-container {
+            width: 100%;
+            padding: 20px 0;
+            max-height: 80vh;
+            overflow: auto; /* 添加滚动 */
+        }
+
+        /* 响应式调整 */
+        @media (min-width: 1024px) {
+            .mermaid-container {
+                aspect-ratio: 1 / 0.618; /* 桌面端黄金分割 */
+            }
+        }
+
+        @media (max-width: 1023px) and (min-width: 768px) {
+            .mermaid-container {
+                aspect-ratio: 1.5 / 1; /* 平板端调整比例 */
+            }
+        }
+
+        @media (max-width: 767px) {
+            .mermaid-container {
+                aspect-ratio: 2 / 1; /* 移动端纵向布局 */
+                padding: 10px 0;
+            }
+            
+            /* 移动端作品卡片优化 */
+            .project-card img {
+                height: auto !important; /* 覆盖固定高度 */
+                min-height: 180px;
+                object-fit: cover;
+            }
+            
+            /* 移动端文字优化 */
+            h1 {
+                font-size: 2.5rem !important;
+            }
+            
+            h2 {
+                font-size: 2rem !important;
+            }
+            
+            /* 增大触摸目标 */
+            .mobile-menu a, 
+            .view-project,
+            #menu-toggle,
+            #close-modal {
+                min-height: 44px;
+                min-width: 44px;
+                display: flex;
+                align-items: center;
+            }
+        }
+
+        /* 超小屏设备优化 (≤375px) */
+        @media (max-width: 375px) {
+            .container {
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+            }
+            
+            .mermaid-container {
+                aspect-ratio: 3 / 1; /* 超小屏进一步调整 */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="nav fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-12">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="#home" class="text-2xl font-bold text-morandi-primary">Dddd的小屋</a>
+            
+            <!-- 桌面端导航 -->
+            <div class="hidden md:flex space-x-8">
+                <a href="#home" class="text-morandi-dark hover:text-morandi-primary transition-colors">首页</a>
+                <a href="#about" class="text-morandi-dark hover:text-morandi-primary transition-colors">关于我</a>
+                <a href="#projects" class="text-morandi-dark hover:text-morandi-primary transition-colors">作品展示</a>
+                <a href="#tech-stack" class="text-morandi-dark hover:text-morandi-primary transition-colors">技术栈</a>
+                <a href="#contact" class="text-morandi-dark hover:text-morandi-primary transition-colors">联系方式</a>
+            </div>
+            
+            <!-- 移动端菜单按钮 -->
+            <button id="menu-toggle" class="md:hidden text-morandi-dark focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="mobile-menu md:hidden absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg mt-1 mx-6 py-4 px-6">
+            <div class="flex flex-col space-y-4">
+                <a href="#home" class="text-morandi-dark hover:text-morandi-primary transition-colors">首页</a>
+                <a href="#about" class="text-morandi-dark hover:text-morandi-primary transition-colors">关于我</a>
+                <a href="#projects" class="text-morandi-dark hover:text-morandi-primary transition-colors">作品展示</a>
+                <a href="#tech-stack" class="text-morandi-dark hover:text-morandi-primary transition-colors">技术栈</a>
+                <a href="#contact" class="text-morandi-dark hover:text-morandi-primary transition-colors">联系方式</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 首页 -->
+    <section id="home" class="min-h-screen flex items-center justify-center pt-16 px-6 md:px-12">
+        <div class="container mx-auto text-center">
+            <div class="fade-in">
+                <h1 class="text-4xl md:text-6xl font-bold mb-6 text-morandi-dark">你好，我是<span class="text-morandi-primary">Dddd</span></h1>
+                <p class="text-xl md:text-xl text-morandi-dark mb-10 max-w-2xl mx-auto">专注于创建美观、实用的数字体验，热爱设计与技术的结合</p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="#projects" class="btn bg-morandi-primary text-white px-8 py-3 rounded-lg font-medium">查看作品</a>
+                    <a href="#contact" class="btn border border-morandi-primary text-morandi-primary px-8 py-3 rounded-lg font-medium">联系我</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 关于我 -->
+    <section id="about" class="py-20 px-6 md:px-12 bg-white">
+        <div class="container mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold mb-16 text-center text-morandi-dark">关于我</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="fade-in">
+                    <img src="https://s.coze.cn/image/X4TCGfGTrF0/" alt="个人照片" class="rounded-lg shadow-lg w-full max-w-md mx-auto">
+                </div>
+                
+                <div class="fade-in delay-200">
+                    <h3 class="text-2xl font-semibold mb-4 text-morandi-dark">设计师 & 开发者</h3>
+                    <p class="text-morandi-dark mb-6">我是一名充满激情的设计师和开发者，拥有超过5年的行业经验。我专注于创建既美观又实用的数字产品，注重用户体验和界面设计的完美结合。</p>
+                    
+                    <p class="text-morandi-dark mb-8">我热爱解决复杂的设计挑战，并且不断学习新技术和设计趋势。我的目标是通过设计和技术的力量，创造出能够改善人们生活的产品。</p>
+                    
+                    <h4 class="text-xl font-semibold mb-4 text-morandi-dark">我的技能</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-morandi-dark">UI/UX 设计</span>
+                                <span class="text-morandi-dark">90%</span>
+                            </div>
+                            <div class="h-2 bg-morandi-secondary bg-opacity-30 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-morandi-primary rounded-full" style="--progress-width: 90%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-morandi-dark">前端开发</span>
+                                <span class="text-morandi-dark">85%</span>
+                            </div>
+                            <div class="h-2 bg-morandi-secondary bg-opacity-30 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-morandi-primary rounded-full" style="--progress-width: 85%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-morandi-dark">响应式设计</span>
+                                <span class="text-morandi-dark">88%</span>
+                            </div>
+                            <div class="h-2 bg-morandi-secondary bg-opacity-30 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-morandi-primary rounded-full" style="--progress-width: 88%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-morandi-dark">交互设计</span>
+                                <span class="text-morandi-dark">82%</span>
+                            </div>
+                            <div class="h-2 bg-morandi-secondary bg-opacity-30 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-morandi-primary rounded-full" style="--progress-width: 82%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 作品展示 -->
+    <section id="projects" class="py-20 px-6 md:px-12 bg-morandi-light">
+        <div class="container mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold mb-16 text-center text-morandi-dark">作品展示</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 作品1 -->
+                <div class="project-card bg-white rounded-lg overflow-hidden shadow-md fade-in">
+                    <img src="https://s.coze.cn/image/GCDsXwciOyo/" alt="移动应用界面设计" class="w-full h-56 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-morandi-dark">移动应用界面设计</h3>
+                        <p class="text-morandi-dark mb-4">为一款健康追踪应用设计的用户界面，注重简洁性和易用性。</p>
+                        <button class="view-project text-morandi-primary font-medium flex items-center" data-project="1">
+                            查看详情 <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 作品2 -->
+                <div class="project-card bg-white rounded-lg overflow-hidden shadow-md fade-in delay-200">
+                    <img src="https://s.coze.cn/image/Lnll4xewRTw/" alt="响应式网站设计" class="w-full h-56 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-morandi-dark">响应式网站设计</h3>
+                        <p class="text-morandi-dark mb-4">为一家咖啡店设计的响应式网站，在各种设备上都能提供良好的用户体验。</p>
+                        <button class="view-project text-morandi-primary font-medium flex items-center" data-project="2">
+                            查看详情 <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 作品3 -->
+                <div class="project-card bg-white rounded-lg overflow-hidden shadow-md fade-in delay-300">
+                    <img src="https://s.coze.cn/image/sSRQ3jQjDGI/" alt="品牌标识设计" class="w-full h-56 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-morandi-dark">品牌标识设计</h3>
+                        <p class="text-morandi-dark mb-4">为一家初创科技公司设计的品牌标识和视觉系统。</p>
+                        <button class="view-project text-morandi-primary font-medium flex items-center" data-project="3">
+                            查看详情 <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 作品4 -->
+                <div class="project-card bg-white rounded-lg overflow-hidden shadow-md fade-in delay-100">
+                    <img src="https://s.coze.cn/image/pvVCFQkjsTk/" alt="电子商务网站设计" class="w-full h-56 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-morandi-dark">电子商务网站设计</h3>
+                        <p class="text-morandi-dark mb-4">为一家时尚品牌设计的电子商务网站，优化了购物体验和转化率。</p>
+                        <button class="view-project text-morandi-primary font-medium flex items-center" data-project="4">
+                            查看详情 <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 作品5 -->
+                <div class="project-card bg-white rounded-lg overflow-hidden shadow-md fade-in delay-200">
+                    <img src="https://s.coze.cn/image/HqrVajawApA/" alt="数据可视化仪表盘" class="w-full h-56 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-morandi-dark">数据可视化仪表盘</h3>
+                        <p class="text-morandi-dark mb-4">为一家金融科技公司设计的数据可视化仪表盘，帮助用户快速理解复杂数据。</p>
+                        <button class="view-project text-morandi-primary font-medium flex items-center" data-project="5">
+                            查看详情 <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 作品6 -->
+                <div class="project-card bg-white rounded-lg overflow-hidden shadow-md fade-in delay-300">
+                    <img src="https://s.coze.cn/image/kfNH5sa9Jpk/" alt="移动游戏界面设计" class="w-full h-56 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-morandi-dark">移动游戏界面设计</h3>
+                        <p class="text-morandi-dark mb-4">为一款休闲游戏设计的用户界面，注重趣味性和直观的操作体验。</p>
+                        <button class="view-project text-morandi-primary font-medium flex items-center" data-project="6">
+                            查看详情 <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 技术栈页面 -->
+    <section id="tech-stack" class="py-20 px-6 md:px-12 bg-white">
+        <div class="container mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold mb-16 text-center text-morandi-dark">技术栈</h2>
+            
+            <div class="max-w-5xl mx-auto bg-morandi-light p-8 rounded-lg shadow-md fade-in">
+                <h3 class="text-2xl font-semibold mb-8 text-center text-morandi-dark">我的技术能力树</h3>
+                
+                <div class="mermaid-container">
+                    <pre class="mermaid">
+                        graph TD
+                            A[技术栈]
+                            A --> B[编程语言]
+                            A --> C[仿真平台]
+                            A --> D[游戏引擎]
+                            
+                            B --> B1[C语言]
+                            B1 --> B1a[数据结构]
+                            B1 --> B1b[算法基础]
+                            B1 --> B1c[系统编程]
+                            
+                            C --> C1[Carla]
+                            C1 --> C1a[自动驾驶仿真]
+                            C1 --> C1b[传感器模拟]
+                            C1 --> C1c[场景构建]
+                            
+                            D --> D1[UE5]
+                            D1 --> D1a[关卡设计]
+                            D1 --> D1b[蓝图可视化编程]
+                            D1 --> D1c[实时渲染]
+                            D1 --> D1d[动画系统]
+                    </pre>
+                </div>
+                
+                <div class="mt-12 text-center">
+                    <p class="text-morandi-dark">持续学习和拓展技术边界，不断完善技术能力体系</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 联系方式 -->
+    <section id="contact" class="py-20 px-6 md:px-12 bg-morandi-light">
+        <div class="container mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold mb-16 text-center text-morandi-dark">联系方式</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="fade-in">
+                    <h3 class="text-2xl font-semibold mb-6 text-morandi-dark">联系我</h3>
+                    <p class="text-morandi-dark mb-8">如果您对我的作品感兴趣，或者有任何合作机会，请随时与我联系。我会尽快回复您的消息。</p>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-morandi-secondary bg-opacity-30 flex items-center justify-center text-morandi-primary mr-4">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-medium text-morandi-dark">电子邮件</h4>
+                                <p class="text-morandi-dark">3195159348@qq.com</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-morandi-secondary bg-opacity-30 flex items-center justify-center text-morandi-primary mr-4">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-medium text-morandi-dark">电话</h4>
+                                <p class="text-morandi-dark">暂无</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-morandi-secondary bg-opacity-30 flex items-center justify-center text-morandi-primary mr-4">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-medium text-morandi-dark">地址</h4>
+                                <p class="text-morandi-dark">暂无</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-10">
+                        <h4 class="text-lg font-medium text-morandi-dark mb-4">关注我</h4>
+                        <div class="flex space-x-4">
+                            <a href="#" class="w-10 h-10 rounded-full bg-morandi-secondary bg-opacity-30 flex items-center justify-center text-morandi-primary hover:bg-morandi-primary hover:text-white transition-colors">
+                                <i class="fab fa-behance"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-morandi-secondary bg-opacity-30 flex items-center justify-center text-morandi-primary hover:bg-morandi-primary hover:text-white transition-colors">
+                                <i class="fab fa-dribbble"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-morandi-secondary bg-opacity-30 flex items-center justify-center text-morandi-primary hover:bg-morandi-primary hover:text-white transition-colors">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            <a href="https://github.com/1029501801" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-full bg-morandi-secondary bg-opacity-30 flex items-center justify-center text-morandi-primary hover:bg-morandi-primary hover:text-white transition-colors">
+                                <i class="fab fa-github"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="fade-in delay-200">
+                    <div class="bg-white p-8 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold mb-6 text-morandi-dark">发送消息</h3>
+                        <form>
+                            <div class="mb-6">
+                                <label for="name" class="block text-morandi-dark mb-2">姓名</label>
+                                <input type="text" id="name" class="w-full px-4 py-3 rounded-lg border border-morandi-secondary focus:outline-none focus:ring-2 focus:ring-morandi-primary focus:border-transparent" placeholder="您的姓名">
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label for="email" class="block text-morandi-dark mb-2">电子邮件</label>
+                                <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border border-morandi-secondary focus:outline-none focus:ring-2 focus:ring-morandi-primary focus:border-transparent" placeholder="您的电子邮件">
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label for="message" class="block text-morandi-dark mb-2">消息</label>
+                                <textarea id="message" rows="5" class="w-full px-4 py-3 rounded-lg border border-morandi-secondary focus:outline-none focus:ring-2 focus:ring-morandi-primary focus:border-transparent" placeholder="请输入您的消息..."></textarea>
+                            </div>
+                            
+                            <button type="button" class="btn w-full bg-morandi-primary text-white px-6 py-3 rounded-lg font-medium">发送消息</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="py-10 px-6 md:px-12 bg-morandi-dark text-white">
+        <div class="container mx-auto text-center">
+            <p class="mb-4">© 2024 Dddd的小屋. 保留所有权利.</p>
+            <p>
+                <a href="https://www.Dddd.com" class="text-morandi-secondary hover:text-white transition-colors">created by coze space</a> | 
+                <span>页面内容均由 AI 生成，仅供参考</span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- 作品详情模态框 -->
+    <div id="project-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-6 bg-black bg-opacity-70">
+        <div class="modal-content bg-white rounded-lg overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center border-morandi-secondary">
+                <h3 id="modal-title" class="text-2xl font-semibold text-morandi-dark">作品详情</h3>
+                <button id="close-modal" class="text-morandi-dark hover:text-morandi-primary focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="overflow-y-auto p-6 flex-grow">
+                <img id="modal-image" src="" alt="作品详情" class="w-full h-auto rounded-lg mb-6">
+                <div id="modal-content">
+                    <!-- 动态内容将通过JavaScript填充 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 根据屏幕尺寸动态调整Mermaid配置
+        function initializeMermaid() {
+            const isMobile = window.innerWidth < 768;
+            const baseConfig = {
+                startOnLoad: true,
+                theme: 'default',
+                flowchart: {
+                    nodeSpacing: isMobile ? 10 : 15,
+                    rankSpacing: isMobile ? 20 : 30,
+                    fontSize: isMobile ? 12 : 14
+                }
+            };
+            
+            mermaid.initialize(baseConfig);
+        }
+        
+        // 初始化Mermaid
+        document.addEventListener('DOMContentLoaded', initializeMermaid);
+        window.addEventListener('resize', initializeMermaid); // 窗口大小变化时重新初始化
+        
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('.nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // 移动端菜单切换
+        const menuToggle = document.getElementById('menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        menuToggle.addEventListener('click', function() {
+            mobileMenu.classList.toggle('active');
+        });
+
+        // 点击导航链接后关闭移动端菜单
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', function() {
+                mobileMenu.classList.remove('active');
+            });
+        });
+
+        // 作品详情模态框
+        const modal = document.getElementById('project-modal');
+        const closeModal = document.getElementById('close-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalImage = document.getElementById('modal-image');
+        const modalContent = document.getElementById('modal-content');
+
+        // 作品数据
+        const projects = [/* 保持不变 */];
+
+        // 打开模态框
+        document.querySelectorAll('.view-project').forEach(button => {
+            button.addEventListener('click', function() {
+                const projectId = parseInt(this.getAttribute('data-project'));
+                const project = projects.find(p => p.id === projectId);
+                
+                if (project) {
+                    modalTitle.textContent = project.title;
+                    modalImage.src = project.image;
+                    modalImage.alt = project.title;
+                    modalContent.innerHTML = project.content;
+                    
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        });
+
+        // 关闭模态框
+        closeModal.addEventListener('click', function() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        // 点击模态框外部关闭
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ESC键关闭模态框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // 滚动动画
+        const fadeElements = document.querySelectorAll('.fade-in');
+        
+        const fadeInObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                    fadeInObserver.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+        
+        fadeElements.forEach(element => {
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(20px)';
+            element.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+            fadeInObserver.observe(element);
+        });
+    </script>
+</body>
+</html>
